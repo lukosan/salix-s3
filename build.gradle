@@ -1,0 +1,14 @@
+dependencies {
+	compile project(':salix-core')
+	compile project(':salix-security-core')
+	
+	compile 'com.amazonaws:aws-java-sdk-s3:1.10.32'	
+	compile 'com.fasterxml.jackson.module:jackson-module-mrbean:2.4.0'
+	
+}
+
+springBoot {
+	mainClass = 'org.lukosan.salix.Application'
+}
+
+bintray.pkg.version.desc = 'Salix Amazon S3 module'
