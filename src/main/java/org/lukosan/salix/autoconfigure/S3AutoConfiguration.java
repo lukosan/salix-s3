@@ -4,8 +4,8 @@ import javax.annotation.PostConstruct;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.lukosan.salix.SalixService;
-import org.lukosan.salix.s3.S3SalixService;
+import org.lukosan.salix.fs.FsClient;
+import org.lukosan.salix.s3.S3FsClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,8 +24,8 @@ public class S3AutoConfiguration {
 		}
 		
 		@Bean
-		public SalixService s3Service() {
-			return new S3SalixService();
+		public FsClient s3FsClient() {
+			return new S3FsClient();
 		}
 		
 	}
