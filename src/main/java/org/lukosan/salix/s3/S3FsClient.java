@@ -75,7 +75,7 @@ public class S3FsClient implements FsClient {
 	    try {
 	    	return client.listObjects(listObjectsRequest);
 	    } catch(AmazonServiceException ase) {
-	    	logger.error(ase);
+	    	logger.error("Exception trying to listObjectsInFolder(" + prefix + ")");
 	    	throw new RuntimeException(ase);
 	    }
 	}
@@ -84,7 +84,7 @@ public class S3FsClient implements FsClient {
 		try {
 			return client.getObject(new GetObjectRequest(bucketName, key));
 		} catch(AmazonServiceException ase) {
-			logger.error(ase);
+			logger.error("Exception trying to getObject(" + key + ")");
 	    	throw new RuntimeException(ase);
 	    }
 	}

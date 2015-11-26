@@ -6,10 +6,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.lukosan.salix.fs.FsClient;
 import org.lukosan.salix.s3.S3FsClient;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@AutoConfigureBefore(FsAutoConfiguration.class)
 public class S3AutoConfiguration {
 
 	@Configuration
