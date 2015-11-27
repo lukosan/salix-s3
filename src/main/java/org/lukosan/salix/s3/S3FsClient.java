@@ -13,7 +13,6 @@ import org.springframework.util.StringUtils;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -82,11 +81,23 @@ public class S3FsClient implements FsClient {
 	
 	private S3Object getObject(String key) {
 		try {
-			return client.getObject(new GetObjectRequest(bucketName, key));
+			return client.getObject(bucketName, key);
 		} catch(AmazonServiceException ase) {
 			logger.error("Exception trying to getObject(" + key + ")");
 	    	throw new RuntimeException(ase);
 	    }
+	}
+
+	@Override
+	public boolean exists(String... paths) {
+		String path = StringUtils.arrayToDelimitedString(paths, delimiter);
+		try {
+			S3Object object = getObject(path);
+			object.close();
+			return object != null;
+		} catch(Exception ex) {
+			return false;
+		}
 	}
 
 }
