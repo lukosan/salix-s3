@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.lukosan.salix.fs.FsClient;
+import org.lukosan.salix.fs.FsSalixService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 
@@ -36,30 +37,31 @@ public class S3FsClient implements FsClient {
 	
 	@Override
 	public void putInputStream(InputStream in, String... paths) {
-		String path = StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = FsSalixService.arrayToDelimitedString(paths, delimiter);
 		PutObjectRequest req = new PutObjectRequest(bucketName, path, in, new ObjectMetadata());
 		client.putObject(req);
 	}
 
 	@Override
 	public InputStream getInputStream(String... paths) {
-		String path = StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = FsSalixService.arrayToDelimitedString(paths, delimiter);
 		S3Object object = getObject(path);
 		return object.getObjectContent();
 	}
 	
 	@Override
 	public List<String> listFoldersInFolder(String... paths) {
-		String path = StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = FsSalixService.arrayToDelimitedString(paths, delimiter);
 		ObjectListing objects = listObjectsInFolder(path);
 	    return objects.getCommonPrefixes().stream().map(s -> s.substring(0, s.length() - 1)).collect(Collectors.toList());
 	}
 	
 	@Override
 	public List<String> listFilesInFolder(String... paths) {
-		String path = StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = FsSalixService.arrayToDelimitedString(paths, delimiter);
 	    ObjectListing objects = listObjectsInFolder(path);
-	    return objects.getObjectSummaries().stream().map(s -> s.getKey().substring(path.length() + 1))
+	    return objects.getObjectSummaries().stream().filter(s -> s.getKey().startsWith(path) && s.getKey().length() > path.length())
+	    		.map(s -> s.getKey().substring(path.length() + 1))
 	    		.filter(f -> StringUtils.hasText(f) && ! f.endsWith(delimiter))
 	    		.collect(Collectors.toList());
 	}
@@ -71,6 +73,20 @@ public class S3FsClient implements FsClient {
 	    ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
 	            .withBucketName(bucketName).withPrefix(prefix)
 	            .withDelimiter(delimiter);
+	    try {
+	    	return client.listObjects(listObjectsRequest);
+	    } catch(AmazonServiceException ase) {
+	    	logger.error("Exception trying to listObjectsInFolder(" + prefix + ")");
+	    	throw new RuntimeException(ase);
+	    }
+	}
+
+	private ObjectListing listAllObjectsInFolder(String prefix) {
+	    if (StringUtils.hasText(prefix) && !prefix.endsWith(delimiter)) {
+	        prefix += delimiter;
+	    }
+	    ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+	            .withBucketName(bucketName).withPrefix(prefix);
 	    try {
 	    	return client.listObjects(listObjectsRequest);
 	    } catch(AmazonServiceException ase) {
@@ -90,7 +106,7 @@ public class S3FsClient implements FsClient {
 
 	@Override
 	public boolean exists(String... paths) {
-		String path = StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = FsSalixService.arrayToDelimitedString(paths, delimiter);
 		try {
 			S3Object object = getObject(path);
 			object.close();
@@ -98,6 +114,16 @@ public class S3FsClient implements FsClient {
 		} catch(Exception ex) {
 			return false;
 		}
+	}
+
+	@Override
+	public List<String> listFilesInSubFolders(String... paths) {
+		String path = FsSalixService.arrayToDelimitedString(paths, delimiter);
+	    ObjectListing objects = listAllObjectsInFolder(path);
+	    return objects.getObjectSummaries().stream().filter(s -> s.getKey().startsWith(path) && s.getKey().length() > path.length())
+	    		.map(s -> s.getKey().substring(path.length() + 1))
+	    		.filter(f -> StringUtils.hasText(f) && ! f.endsWith(delimiter))
+	    		.collect(Collectors.toList());
 	}
 
 }
